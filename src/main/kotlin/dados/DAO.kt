@@ -10,12 +10,12 @@ abstract class DAO<TModel, TEntity>(
     abstract fun toModel(entity: TEntity): TModel
     abstract fun toEntity(model: TModel): TEntity
 
-    open fun findAll(): List<TModel> {
-        val entities = manager.createQuery("from $entityType.simpleName", entityType).resultList
-        return entities.map { toModel(it) }
+    open fun getLista(): List<TModel> {
+        val query = manager.createQuery("from $entityType.simpleName", entityType).resultList
+        return query.map { toModel(it) }
     }
 
-    open fun create(model: TModel): TModel {
+    open fun adicionar(model: TModel): TModel {
         val entity = toEntity(model)
         manager.transaction {
             manager.persist(entity)
@@ -23,23 +23,29 @@ abstract class DAO<TModel, TEntity>(
         return toModel(entity)
     }
 
-    open fun find(id: Long): TModel? {
-        val entity = manager.find(entityType, id)
-        return entity?.let { toModel(it) }
+    private fun recuperarEntityPeloId(id: Long): TEntity {
+        val query = manager.createQuery("from $entityType.simpleName where id = :id", entityType)
+        query.setParameter("id", id)
+        return query.singleResult
     }
 
-    open fun update(id: Long): TModel {
-        val entity = toEntity(find(id)!!)
+    open fun recuperarPeloId(id: Long): TModel {
+        val entity = recuperarEntityPeloId(id)
+        return toModel(entity)
+    }
+
+    open fun atualizar(id: Long): TModel {
+        val entity = recuperarEntityPeloId(id)!!
         manager.transaction {
             manager.merge(entity)
         }
         return toModel(entity)
     }
 
-    fun delete(id: Long) {
-        val entity = toEntity(find(id)!!)
+    open fun apagar(id: Long) {
+        val query = recuperarEntityPeloId(id)
         manager.transaction {
-            manager.remove(entity)
+            manager.remove(query)
         }
     }
 
